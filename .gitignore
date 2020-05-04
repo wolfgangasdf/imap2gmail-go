@@ -1,0 +1,7 @@
+.DS_Store
+imap2gmail
+imap2gmail-*
+imap2gmail.ini
+credentials.json
+token.json
+deploytowps.sh
