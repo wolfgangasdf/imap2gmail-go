@@ -18,7 +18,7 @@ func imapGetClient() (*client.Client, error) {
 	if err != nil {
 		return nil, errors.New("imapGetClient dial: " + err.Error())
 	}
-	// c.SetDebug(os.Stdout) // TODO
+	// c.SetDebug(os.Stdout) // enable for debug
 	c.Timeout = 2 * Conf.ConfImap.IdleTimeout
 
 	if err := c.Login(Conf.ConfImap.User, Conf.ConfImap.Password); err != nil {

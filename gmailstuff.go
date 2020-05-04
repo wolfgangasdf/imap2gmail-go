@@ -74,7 +74,7 @@ func saveToken(path string, token *oauth2.Token) {
 }
 
 func getService() (*gmail.Service, error) {
-	b, err := ioutil.ReadFile("credentials.json")
+	b, err := ioutil.ReadFile(Conf.ConfGmail.Credentials)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to read client secret file: %v", err)
 	}
@@ -122,8 +122,8 @@ func GmailImport(traw string) error {
 
 	resm, rese := srv.Users.Messages.Import("me", &gmail.Message{}).
 		Media(strings.NewReader(traw), googleapi.ContentType("message/rfc822")).
-		ProcessForCalendar(true). // TODO setting!
-		ProgressUpdater(pu).      // TODO does this work?
+		ProcessForCalendar(Conf.ConfGmail.ProcessForCalendar).
+		ProgressUpdater(pu). // TODO does this work?
 		Do()
 	if rese != nil {
 		return rese

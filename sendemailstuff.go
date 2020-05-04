@@ -7,8 +7,6 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-const canemail = true
-
 // https://pkg.go.dev/gopkg.in/gomail.v2?tab=doc#example-package
 
 // SendEmail sends a notification email
@@ -24,7 +22,7 @@ func SendEmail(subject string, content string) {
 	m.SetBody("text/html", content)
 
 	d := gomail.NewDialer(Conf.ConfMail.Server, Conf.ConfMail.Port, Conf.ConfMail.User, Conf.ConfMail.Password)
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: true} // for localhosts... TODO
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true} // not nice, needed for localhost
 	if err := d.DialAndSend(m); err != nil {
 		panic(err)
 	}

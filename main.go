@@ -32,11 +32,17 @@ type ConfMail struct {
 	Password string
 }
 
+// ConfGmail holds gmail config
+type ConfGmail struct {
+	Credentials        string `comment:"credentials.json file path"`
+	ProcessForCalendar bool   `comment:"process emails for calendar etc"`
+}
+
 // Config store global settings
 type Config struct {
-	ConfImap         `comment:"settings for the imap server that is polled"`
-	GmailCredentials string `comment:"Gmail credentials.json file path"`
-	ConfMail         `comment:"Notification and warning emails settings"`
+	ConfImap  `comment:"Settings for the imap server that is polled"`
+	ConfMail  `comment:"Notification and warning emails settings"`
+	ConfGmail `comment:"Gmail settings"`
 }
 
 // Conf holds the global settings
@@ -52,6 +58,10 @@ var Conf Config = Config{
 	ConfMail: ConfMail{
 		Server: "localhost",
 		Port:   25,
+	},
+	ConfGmail: ConfGmail{
+		Credentials:        "credentials.json",
+		ProcessForCalendar: true,
 	},
 }
 
@@ -79,7 +89,7 @@ func doit() {
 					SendEmail("everything is again fine", "")
 					errorstate = false
 				}
-			case r := <-time.Tick(Conf.ConfImap.IdleTimeout * 3):
+			case r := <-time.Tick(Conf.ConfImap.IdleTimeout * 2): // this is watchdog idle time
 				log.Printf("wdog: errstate=%v received timer tick: %v", errorstate, r)
 				if !errorstate {
 					errorstate = true
@@ -99,11 +109,10 @@ func doit() {
 	for {
 		log.Println("main: before imaploop")
 		if err := ImapLoop(chWdog); err != nil {
-			log.Println("main: error imaploop: ", err)
-			time.Sleep(60 * time.Second) // TODO enough if thing goes mad?
+			log.Println("main: error imaploop, sleeping 1 minute: ", err)
+			time.Sleep(60 * time.Second) // TODO enough if thing goes mad? increase automatically if repetively?
 		}
 	}
-
 }
 
 func main() {
