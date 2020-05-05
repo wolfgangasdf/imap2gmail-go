@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"time"
 
@@ -56,8 +57,7 @@ var Conf Config = Config{
 		IdleTimeout:      5 * time.Minute,
 	},
 	ConfMail: ConfMail{
-		Server: "localhost",
-		Port:   25,
+		Port: 25,
 	},
 	ConfGmail: ConfGmail{
 		Credentials:        "credentials.json",
@@ -75,41 +75,49 @@ func doit() {
 		log.Fatal(err)
 	}
 
-	chWdog := make(chan interface{})
+	chWdog := make(chan error)
 
-	// watchthread, never ends.
-	go func(ch chan interface{}) {
+	// watchthread, never ends. periodically send nil to silence.
+	go func(ch chan error) {
 		errorstate := false
 		for {
 			select {
 			case r := <-ch:
 				log.Printf("wdog: received on ch: %v", r)
-				if errorstate {
-					log.Printf("wdog: was in errorstate, send email that works again!")
-					SendEmail("everything is again fine", "")
-					errorstate = false
+				switch r {
+				case nil:
+					if errorstate {
+						log.Printf("wdog: was in errorstate, send email that works again!")
+						SendEmail("everything is again fine", "")
+						errorstate = false
+					}
+				default: // got an error
+					if !errorstate {
+						errorstate = true
+						log.Printf("wdog: send email, err=%v", r)
+						SendEmail("error", "Check that imap2gmail is working properly, possibly the IMAP or gmail server is temporarily down.\n"+
+							"I will send another email if it works again!\nError="+r.Error())
+					} else {
+						log.Printf("wdog: error but already in errorstate, don't send email, error=%v", r)
+					}
 				}
 			case r := <-time.Tick(Conf.ConfImap.IdleTimeout * 2): // this is watchdog idle time
-				log.Printf("wdog: errstate=%v received timer tick: %v", errorstate, r)
-				if !errorstate {
-					errorstate = true
-					log.Printf("wdog: timeout, send email!")
-					SendEmail("timeout", "Check that imap2gmail is working properly, possibly the IMAP or gmail server is temporarily down.\nI will send another email if it works again!")
-				} else {
-					log.Printf("wdog: timeout but already in errorstate, don't send email!")
-				}
+				log.Printf("wdog: errstate=%v received timer timeout: %v", errorstate, r)
+				go func() { ch <- errors.New("timeout error") }()
 			}
 		}
 	}(chWdog)
 
-	// from now on, the program must NOT terminate!
 	SendEmail("started", "")
+
+	// from now on, the program must NOT terminate!
 
 	// infinite loop
 	for {
 		log.Println("main: before imaploop")
 		if err := ImapLoop(chWdog); err != nil {
-			log.Println("main: error imaploop, sleeping 1 minute: ", err)
+			log.Println("main: error imaploop, telling watchdog and sleeping 1 minute: ", err)
+			chWdog <- err
 			time.Sleep(60 * time.Second) // TODO enough if thing goes mad? increase automatically if repetively?
 		}
 	}

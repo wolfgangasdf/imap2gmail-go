@@ -20,7 +20,8 @@ Unfortunately, you need to get your own GMail API keys for imap2gmail; there is 
 
 ### first-time run: settings and authentification
 * Run imap2gmail: `./imap2gmail` , this creates a config file `imap2gmail.ini`, edit this.
-* Run imap2gmail again: `./imap2gmail`. Open the link in web browser, click "advanced" and "Go to imap2gmail (unsafe)", click through, and copy the code into the console.
+  * make sure that sending notification emails (ConfEmail) is 100% reliable (such as local postfix), or disable it.
+* Run imap2gmail again: `./imap2gmail`. Open the link in web browser, click "advanced" and "Go to imap2gmail (unsafe)", click through, and copy the code into the console and press enter.
 * This will happen only once.
 
 ### build & run

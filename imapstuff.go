@@ -152,7 +152,7 @@ func imapIdleWait(c *client.Client, mbox *imap.MailboxStatus) error {
 }
 
 // ImapLoop is the main loop. It returns if error or imap conn broken.
-func ImapLoop(wdog chan interface{}) error {
+func ImapLoop(wdog chan error) error {
 	c, err := imapGetClient()
 	if err != nil {
 		return err
@@ -184,7 +184,7 @@ func ImapLoop(wdog chan interface{}) error {
 			return err
 		}
 
-		wdog <- "dididle" // if no errors, silence watchdog
+		wdog <- nil // if no errors, silence watchdog
 
 		log.Println("imaploop: after imap idle wait")
 	}
