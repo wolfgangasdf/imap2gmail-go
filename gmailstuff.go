@@ -115,16 +115,13 @@ func GmailImport(traw string) error {
 	}
 
 	// import message https://developers.google.com/gmail/api/v1/reference/users/messages/import
-
-	pu := func(current, total int64) {
-		log.Printf("GmailImport progress: %v (%v of %v)", total/current, current, total)
+	pu := func(current, total int64) { // bug: total is zero...
+		log.Printf("GmailImport progress: %v", current)
 	}
-
 	resm, rese := srv.Users.Messages.Import("me", &gmail.Message{}).
 		Media(strings.NewReader(traw), googleapi.ContentType("message/rfc822")).
 		ProcessForCalendar(Conf.ConfGmail.ProcessForCalendar).
-		ProgressUpdater(pu). // TODO does this work?
-		Do()
+		ProgressUpdater(pu).Do()
 	if rese != nil {
 		return rese
 	}

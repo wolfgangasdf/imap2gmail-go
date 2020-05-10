@@ -53,23 +53,54 @@ func ImapTest() error {
 	return nil
 }
 
+func imapMoveTo(c *client.Client, seqset *imap.SeqSet, targetFolder string) error {
+	// copy to moved folder
+	log.Printf("imapMoveTo: copy to folder %v...", targetFolder)
+	if err := c.Copy(seqset, targetFolder); err != nil {
+		return err
+	}
+
+	// delete inbox msg
+	log.Println("imapMoveTo: mark deleted...")
+	if err := c.Store(seqset, imap.FormatFlagsOp(imap.AddFlags, false), []interface{}{imap.DeletedFlag}, nil); err != nil {
+		return err
+	}
+	log.Println("imapMoveTo: expunge...")
+	if err := c.Expunge(nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func imapHandleFirstMsg(c *client.Client, mbox *imap.MailboxStatus) error {
 	log.Println("handlefirst: begin")
-	// get first msg
 	seqset := new(imap.SeqSet)
-	seqset.AddNum(1)
+	seqset.AddNum(mbox.Messages) // newest message first
 	messages := make(chan *imap.Message, 1)
 	done := make(chan error, 1)
-	section := &imap.BodySectionName{}
-	items := []imap.FetchItem{section.FetchItem()}
+	log.Println("handlefirst: get first message envelope & size")
 	go func() {
-		done <- c.Fetch(seqset, items, messages)
+		done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchRFC822Size}, messages)
 	}()
-
-	// get body
-	log.Println("handlefirst: get body...")
 	msg := <-messages
-	log.Println("msg: ", msg.Uid)
+	mSubject := msg.Envelope.Subject
+	mID := msg.Envelope.MessageId
+	mSize := msg.Size // note that at least for exchange servers, this is useless orig file size(s), NOT b64 encoded. joke.
+	log.Printf("handlefirst:   size=%v, id=%v, subject=%v", mSize, mID, mSubject)
+	if mSize > uint32(Conf.ConfImap.MaxEmailSize) {
+		log.Printf("handlefirst: message too big: %v, moving to quarantine...", mSize)
+		SendEmail(fmt.Sprintf("Moving message to quarantine mid=%v", mID), fmt.Sprintf("Message too big: %v\nsubject=%v", mSize, mSubject))
+		return imapMoveTo(c, seqset, Conf.ConfImap.FolderQuarantine)
+	}
+
+	log.Println("handlefirst: get first message raw")
+	messages = make(chan *imap.Message, 1) // channels need to be reopened
+	done = make(chan error, 1)
+	section := &imap.BodySectionName{}
+	go func() {
+		done <- c.Fetch(seqset, []imap.FetchItem{section.FetchItem()}, messages)
+	}()
+	msg = <-messages
 	r := msg.GetBody(section)
 	if r == nil {
 		return errors.New("Server didn't returned message body")
@@ -77,39 +108,25 @@ func imapHandleFirstMsg(c *client.Client, mbox *imap.MailboxStatus) error {
 	if err := <-done; err != nil {
 		return err
 	}
+	origlen := r.Len()
 
-	// read raw email
-	log.Println("handlefirst: read raw...")
-	oldlen := r.Len()
-	log.Println("r.len: ", oldlen)
-	p := make([]byte, oldlen)
+	log.Printf("handlefirst: read raw... (origlen=%v)", origlen)
+	p := make([]byte, origlen)
 	rlen, err := r.Read(p)
 	if err != nil {
 		return err
 	}
-	if oldlen != rlen {
-		return fmt.Errorf("read wrong len %v and %v", oldlen, rlen)
+	if origlen != rlen {
+		return fmt.Errorf("read wrong: origlen=%v and rlen=%v", origlen, rlen)
 	}
 
-	// import into gmail
 	log.Println("handlefirst: import into gmail...")
 	if err := GmailImport(string(p)); err != nil {
 		return err
 	}
 
-	// copy to moved folder
-	log.Println("handlefirst: copy to moved folder...")
-	if err := c.Copy(seqset, Conf.ConfImap.FolderMoved); err != nil {
-		return err
-	}
-
-	// delete inbox msg
-	log.Println("handlefirst: mark deleted...")
-	if err := c.Store(seqset, imap.FormatFlagsOp(imap.AddFlags, false), []interface{}{imap.DeletedFlag}, nil); err != nil {
-		return err
-	}
-	log.Println("handlefirst: expunge...")
-	if err := c.Expunge(nil); err != nil {
+	log.Println("handlefirst: move to moved folder...")
+	if err := imapMoveTo(c, seqset, Conf.ConfImap.FolderMoved); err != nil {
 		return err
 	}
 
