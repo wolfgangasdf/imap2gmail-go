@@ -123,6 +123,10 @@ func GmailImport(traw string) error {
 		ProcessForCalendar(Conf.ConfGmail.ProcessForCalendar).
 		ProgressUpdater(pu).Do()
 	if rese != nil {
+		log.Printf("GmailImport error: %v", rese)
+		if gapiErr, ok := rese.(*googleapi.Error); ok {
+			log.Printf("   code:%v err:%v msg:%v", gapiErr.Code, gapiErr.Error(), gapiErr.Message)
+		}
 		return rese
 	}
 	log.Printf("GmailImport result: em %v, err %v", resm.ServerResponse.HTTPStatusCode, rese)

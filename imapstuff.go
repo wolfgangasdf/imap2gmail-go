@@ -122,7 +122,9 @@ func imapHandleFirstMsg(c *client.Client, mbox *imap.MailboxStatus) error {
 
 	log.Println("handlefirst: import into gmail...")
 	if err := GmailImport(string(p)); err != nil {
-		return err
+		log.Println("handlefirst: GmailImport gave error, moving to quarantine: ", err)
+		SendEmail(fmt.Sprintf("Moving message to quarantine mid=%v", mID), fmt.Sprintf("GmailImport error: %v\nsubject=%v", err, mSubject))
+		return imapMoveTo(c, seqset, Conf.ConfImap.FolderQuarantine)
 	}
 
 	log.Println("handlefirst: move to moved folder...")
@@ -188,7 +190,7 @@ func ImapLoop(wdog chan error) error {
 		for mbox.Messages > 0 {
 			log.Printf("imaploop: handle first message...")
 			if err := imapHandleFirstMsg(c, mbox); err != nil {
-				log.Printf("imaploop: handle first error: %v", err)
+				log.Printf("imaploop: handle error: %v", err)
 				return err
 				// TODO: move to quarantine?
 			}
