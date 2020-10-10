@@ -83,6 +83,9 @@ func imapHandleFirstMsg(c *client.Client, mbox *imap.MailboxStatus) error {
 		done <- c.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope, imap.FetchRFC822Size}, messages)
 	}()
 	msg := <-messages
+	if msg == nil {
+		return errors.New("Couldn't get first message envelope & size")
+	}
 	mSubject := msg.Envelope.Subject
 	mID := msg.Envelope.MessageId
 	mSize := msg.Size // note that at least for exchange servers, this is useless orig file size(s), NOT b64 encoded. joke.
@@ -101,6 +104,9 @@ func imapHandleFirstMsg(c *client.Client, mbox *imap.MailboxStatus) error {
 		done <- c.Fetch(seqset, []imap.FetchItem{section.FetchItem()}, messages)
 	}()
 	msg = <-messages
+	if msg == nil {
+		return errors.New("Couldn't get first message raw")
+	}
 	r := msg.GetBody(section)
 	if r == nil {
 		return errors.New("Server didn't returned message body")
