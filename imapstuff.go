@@ -177,7 +177,16 @@ func imapIdleWait(c *client.Client, mbox *imap.MailboxStatus) error {
 }
 
 // ImapLoop is the main loop. It returns if error or imap conn broken.
-func ImapLoop(wdog chan error) error {
+func ImapLoop(wdog chan error) (errres error) {
+
+	// catch all panics
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Recovering from panic in ImapLoop, r=%v \n", r)
+			errres = fmt.Errorf("ImapLoop: recovered panic: %v", r)
+		}
+	}()
+
 	c, err := imapGetClient()
 	if err != nil {
 		return err
@@ -198,7 +207,6 @@ func ImapLoop(wdog chan error) error {
 			if err := imapHandleFirstMsg(c, mbox); err != nil {
 				log.Printf("imaploop: handle error: %v", err)
 				return err
-				// TODO: move to quarantine?
 			}
 			log.Println("imaploop: import of one message done!")
 		}
