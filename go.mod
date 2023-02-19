@@ -1,18 +1,32 @@
-module imap2gmail
+module github.com/wolfgangasdf/imap2gmail
 
-go 1.14
+go 1.19
 
 require (
-	github.com/emersion/go-imap v1.0.5
-	github.com/emersion/go-imap-idle v0.0.0-20200601154248-f05f54664cc4
-	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21 // indirect
-	github.com/smartystreets/goconvey v1.6.4 // indirect
-	golang.org/x/net v0.0.0-20200904194848-62affa334b73
-	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
-	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f // indirect
-	google.golang.org/api v0.31.0
-	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d // indirect
-	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
+	github.com/emersion/go-imap v1.2.1
+	github.com/emersion/go-imap-idle v0.0.0-20210907174914-db2568431445
+	golang.org/x/net v0.7.0
+	golang.org/x/oauth2 v0.5.0
+	google.golang.org/api v0.110.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
-	gopkg.in/ini.v1 v1.61.0
+	gopkg.in/ini.v1 v1.67.0
+)
+
+require (
+	cloud.google.com/go/compute v1.18.0 // indirect
+	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	github.com/emersion/go-sasl v0.0.0-20220912192320-0145f2c60ead // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
+	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
+	go.opencensus.io v0.24.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20230216225411-c8e22ba71e44 // indirect
+	google.golang.org/grpc v1.53.0 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
+	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 )
