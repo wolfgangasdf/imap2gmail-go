@@ -87,12 +87,13 @@ func imapHandleFirstMsg(c *client.Client, mbox *imap.MailboxStatus) error {
 		return errors.New("Couldn't get first message envelope & size")
 	}
 	mSubject := msg.Envelope.Subject
+	mFrom := msg.Envelope.From
 	mID := msg.Envelope.MessageId
 	mSize := msg.Size // note that at least for exchange servers, this is useless orig file size(s), NOT b64 encoded. joke.
 	log.Printf("handlefirst:   size=%v, id=%v, subject=%v", mSize, mID, mSubject)
 	if mSize > uint32(Conf.ConfImap.MaxEmailSize) {
 		log.Printf("handlefirst: message too big: %v, moving to quarantine...", mSize)
-		SendEmail(fmt.Sprintf("Moving message to quarantine mid=%v", mID), fmt.Sprintf("Message too big: %v\nsubject=%v", mSize, mSubject))
+		SendEmail(fmt.Sprintf("Moving message to quarantine mid=%v", mID), fmt.Sprintf("Message too big: %v\nfrom=%v\nsubject=%v", mSize, mFrom, mSubject))
 		return imapMoveTo(c, seqset, Conf.ConfImap.FolderQuarantine)
 	}
 
@@ -128,9 +129,12 @@ func imapHandleFirstMsg(c *client.Client, mbox *imap.MailboxStatus) error {
 
 	log.Println("handlefirst: import into gmail...")
 	if err := GmailImport(string(p)); err != nil {
-		log.Println("handlefirst: GmailImport gave error, moving to quarantine: ", err)
-		SendEmail(fmt.Sprintf("Moving message to quarantine mid=%v", mID), fmt.Sprintf("GmailImport error: %v\nsubject=%v", err, mSubject))
-		return imapMoveTo(c, seqset, Conf.ConfImap.FolderQuarantine)
+		log.Println("handlefirst: GmailImport gave error, trying again... ", err)
+		if err := GmailImport(string(p)); err != nil {
+			log.Println("handlefirst: GmailImport gave error twice, moving to quarantine: ", err)
+			SendEmail(fmt.Sprintf("Moving message to quarantine mid=%v", mID), fmt.Sprintf("GmailImport error: %v\nfrom=%v\nsubject=%v", err, mFrom, mSubject))
+			return imapMoveTo(c, seqset, Conf.ConfImap.FolderQuarantine)
+		}
 	}
 
 	log.Println("handlefirst: move to moved folder...")
