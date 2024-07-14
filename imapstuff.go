@@ -84,7 +84,7 @@ func imapHandleFirstMsg(c *client.Client, mbox *imap.MailboxStatus) error {
 	}()
 	msg := <-messages
 	if msg == nil {
-		return errors.New("Couldn't get first message envelope & size")
+		return errors.New("couldn't get first message envelope & size")
 	}
 	mSubject := msg.Envelope.Subject
 	mFrom := msg.Envelope.From
@@ -106,11 +106,11 @@ func imapHandleFirstMsg(c *client.Client, mbox *imap.MailboxStatus) error {
 	}()
 	msg = <-messages
 	if msg == nil {
-		return errors.New("Couldn't get first message raw")
+		return errors.New("couldn't get first message raw")
 	}
 	r := msg.GetBody(section)
 	if r == nil {
-		return errors.New("Server didn't returned message body")
+		return errors.New("server didn't returned message body")
 	}
 	if err := <-done; err != nil {
 		return err

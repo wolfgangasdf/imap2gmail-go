@@ -130,7 +130,9 @@ func main() {
 		cfg := ini.Empty()
 		cfg.SaveTo("imap2gmail.ini")
 		// save new
-		err = ini.ReflectFrom(cfg, &Conf)
+		if err = ini.ReflectFrom(cfg, &Conf); err != nil {
+			panic(err)
+		}
 		if err = cfg.SaveTo(iniPath); err != nil {
 			panic(err)
 		}

@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/option"
 )
 
 // https://developers.google.com/gmail/api/quickstart/go
@@ -74,20 +74,20 @@ func saveToken(path string, token *oauth2.Token) {
 }
 
 func getService() (*gmail.Service, error) {
-	b, err := ioutil.ReadFile(Conf.ConfGmail.Credentials)
+	ctx := context.Background()
+	b, err := os.ReadFile(Conf.ConfGmail.Credentials)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to read client secret file: %v", err)
+		return nil, fmt.Errorf("unable to read client secret file: %v", err)
 	}
 	// If modifying these scopes, delete your previously saved token.json.
 	config, err := google.ConfigFromJSON(b, gmail.GmailLabelsScope, gmail.GmailModifyScope, gmail.GmailInsertScope)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to parse client secret file to config: %v", err)
+		return nil, fmt.Errorf("unable to parse client secret file to config: %v", err)
 	}
 	client := getClient(config)
-
-	srv, err := gmail.New(client)
+	srv, err := gmail.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		return nil, fmt.Errorf("Unable to retrieve Gmail client: %v", err)
+		return nil, fmt.Errorf("unable to retrieve Gmail client: %v", err)
 	}
 	return srv, nil
 }
@@ -131,7 +131,7 @@ func GmailImport(traw string) error {
 	}
 	log.Printf("GmailImport result: em %v, err %v", resm.ServerResponse.HTTPStatusCode, rese)
 
-	resm, rese = srv.Users.Messages.Modify("me", resm.Id, &gmail.ModifyMessageRequest{AddLabelIds: []string{"INBOX", "UNREAD"}}).Do()
+	_, rese = srv.Users.Messages.Modify("me", resm.Id, &gmail.ModifyMessageRequest{AddLabelIds: []string{"INBOX", "UNREAD"}}).Do()
 	if rese != nil {
 		return rese
 	}
