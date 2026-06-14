@@ -213,6 +213,12 @@ func ImapLoop(wdog chan error) (errres error) {
 				return err
 			}
 			log.Println("imaploop: import of one message done!")
+
+			// re-Select INBOX
+			mbox, err = c.Select(Conf.ConfImap.Folder, false)
+			if err != nil {
+				return err
+			}
 		}
 
 		// wait clever
